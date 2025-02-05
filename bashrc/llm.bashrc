@@ -38,3 +38,13 @@ llm-image-run(){
     -p 11434:11434 \
     my-ollama-llm
 }
+
+open-webui-run(){
+docker run -d \
+  --network=host \
+  --name open-webui \
+  --restart always \
+  -v /home/lrocha/data/open-webui:/app/backend/data \
+  -e OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+  ghcr.io/open-webui/open-webui:ollama
+}
