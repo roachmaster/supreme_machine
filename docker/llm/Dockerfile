@@ -19,10 +19,6 @@ RUN curl -fsSL https://ollama.com/install.sh | sh
 RUN mkdir -p /root/.ollama && \
     ssh-keygen -t ed25519 -N "" -f /root/.ollama/id_ed25519
 
-# Pull the deepseek-r1:7b model in advance
-# (This will download the model so it's available in the image)
-RUN ollama pull deepseek-r1:7b
-
 # Copy your LLM scripts into the container (if you have them locally)
 WORKDIR /app
 COPY . /app
