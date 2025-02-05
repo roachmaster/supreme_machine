@@ -3,6 +3,7 @@ FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu20.04
 
 # Suppress interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
+ENV OLLAMA_HOST=0.0.0.0
 
 # Install system packages (including curl, ca-certificates, and ssh-keygen)
 RUN apt-get update && \
