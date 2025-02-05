@@ -1,0 +1,21 @@
+name: '{{project_name}}'
+services:
+  {{service_name}}:
+    image: '{{{image}}}'
+    volumes:
+      - {{{models_volume}}}
+      - {{{logs_volume}}}
+    environment:
+      - MODEL_PATH={{{model_path}}}
+    ports:
+      - "0.0.0.0:{{external_port}}:{{internal_port}}"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: '{{{driver}}}'
+              count: '{{{device_count}}}'
+              capabilities:
+{{#capabilities}}
+                - "{{.}}"
+{{/capabilities}}

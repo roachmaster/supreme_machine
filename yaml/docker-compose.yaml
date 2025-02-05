@@ -1,0 +1,19 @@
+name: 'supreme_machine'
+services:
+  llm:
+    image: 'huggingface/transformers-pytorch-cuda:2.1.0'
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - MODEL_PATH=/app/models
+    ports:
+      - "0.0.0.0:8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: 'nvidia'
+              count: 'all'
+              capabilities:
+                - "gpu"
