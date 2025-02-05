@@ -1,7 +1,7 @@
 name: 'supreme_machine'
 services:
   llm:
-    image: 'huggingface/transformers-pytorch-cuda:2.1.0'
+    image: 'huggingface/transformers-pytorch-gpu:latest'
     volumes:
       - ./models:/app/models
       - ./logs:/app/logs
