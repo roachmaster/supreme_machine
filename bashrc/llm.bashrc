@@ -40,7 +40,7 @@ llm-image-run(){
 }
 
 open-webui-run(){
-docker run -d \
+docker run -d --rm \
   --network=host \
   --name open-webui \
   --restart always \
