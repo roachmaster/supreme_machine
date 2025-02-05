@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get install -y python3 python3-pip git curl ca-certificates openssh-client && \
     rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch + Transformers (for example)
+# Install PyTorch + Transformers (if needed)
 RUN pip3 install --no-cache-dir torch torchvision torchaudio transformers
 
 # Install Ollama
@@ -19,9 +19,13 @@ RUN curl -fsSL https://ollama.com/install.sh | sh
 RUN mkdir -p /root/.ollama && \
     ssh-keygen -t ed25519 -N "" -f /root/.ollama/id_ed25519
 
+# Pull the deepseek-r1:7b model in advance
+# (This will download the model so it's available in the image)
+RUN ollama pull deepseek-r1:7b
+
 # Copy your LLM scripts into the container (if you have them locally)
 WORKDIR /app
 COPY . /app
 
-# By default, open a Bash shell
-CMD ["/bin/bash"]
+# By default, start the Ollama server
+CMD ["ollama", "serve"]
