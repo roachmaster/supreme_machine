@@ -1,7 +1,7 @@
 {
   "project_name": "supreme_machine",
   "service_name": "llm",
-  "image": "huggingface/transformers-pytorch-cuda:2.1.0",
+  "image": "huggingface/transformers-pytorch-gpu:latest",
   "models_volume": "./models:/app/models",
   "logs_volume": "./logs:/app/logs",
   "model_path": "/app/models",
