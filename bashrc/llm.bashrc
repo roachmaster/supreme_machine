@@ -32,19 +32,24 @@ llm-pull() {
 }
 
 llm-image-run(){
-    docker run -d --rm \
-    --gpus all \
-    -v /home/lrocha/data/ollama_data:/root/.ollama \
-    -p 11434:11434 \
-    my-ollama-llm
+docker run -d \
+  --name ollama \
+  --network=openwebui \
+  --gpus all \
+  -v /home/lrocha/data/ollama_data:/root/.ollama \
+  -p 11434:11434 \
+  my-ollama-llm
+
 }
 
 open-webui-run(){
-docker run -d --rm \
-  --network=host \
+docker run -d \
   --name open-webui \
+  --network openwebui \
   --restart always \
   -v /home/lrocha/data/open-webui:/app/backend/data \
-  -e OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+  -p 3000:8080 \
+  -e OLLAMA_BASE_URL=http://ollama:11434 \
   ghcr.io/open-webui/open-webui:ollama
+
 }
