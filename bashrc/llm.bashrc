@@ -32,10 +32,9 @@ llm-pull() {
 }
 
 llm-image-run(){
-    docker run -it --rm \
+    docker run -d --rm \
     --gpus all \
     -v /home/lrocha/data/ollama_data:/root/.ollama \
     -p 11434:11434 \
-    my-ollama-llm \
-    ollama serve --host=0.0.0.0:11434
+    my-ollama-llm
 }
