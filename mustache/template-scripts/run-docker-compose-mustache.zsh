@@ -12,7 +12,7 @@ MUSTACHE_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Define the paths to the template and data files
 TEMPLATE_FILE="${MUSTACHE_DIR}/templates/docker-compose.mustache"
-DATA_FILE="${MUSTACHE_DIR}/template_data/docker-compose-data.json"
+DATA_FILE="${MUSTACHE_DIR}/template_data/docker-compose-data.yaml"
 
 # Check that the template file exists
 if [ ! -f "$TEMPLATE_FILE" ]; then

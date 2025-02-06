@@ -1,55 +1,57 @@
 # llm.bashrc
-# Functions for daily LLM Docker utility tasks
+# Functions for daily LLM Docker tasks (no docker-compose)
 
-# Start the LLM service using docker-compose
-llm-start() {
-    docker-compose -f docker-compose.llm.yml up -d
-}
-
-# Stop the LLM service
+# Stop (and remove) the LLM container
 llm-stop() {
-    docker-compose -f docker-compose.llm.yml down
+    docker stop ollama 2>/dev/null || true
+    docker rm ollama 2>/dev/null || true
 }
 
-# Tail the logs for the LLM service
+# Tail the logs for the LLM container
 llm-logs() {
-    docker-compose -f docker-compose.llm.yml logs -f
+    docker logs -f ollama
 }
 
-# Rebuild and restart the LLM service
+# Build (or rebuild) the LLM image from a Dockerfile (assuming local Dockerfile)
 llm-rebuild() {
-    docker-compose -f docker-compose.llm.yml up -d --build
+    # Adjust the Docker build context and Dockerfile path as needed.
+    docker build -t my-ollama-llm .
 }
 
-# Show the status of the LLM service containers
+# Show the status of the LLM container
 llm-status() {
-    docker-compose -f docker-compose.llm.yml ps
+    docker ps -f name=ollama
 }
 
-# Pull the latest image for the LLM service
+# Pull the latest version of the LLM image from a registry
 llm-pull() {
-    docker-compose -f docker-compose.llm.yml pull
+    docker pull my-ollama-llm
 }
 
+# Run the LLM container
 llm-image-run(){
-docker run -d \
-  --name ollama \
-  --network=openwebui \
-  --gpus all \
-  -v /home/lrocha/data/ollama_data:/root/.ollama \
-  -p 11434:11434 \
-  my-ollama-llm
+    # Stop any running container named ollama first
+    llm-stop
 
+    docker run -d \
+      --name ollama \
+      --gpus all \
+      -v /home/lrocha/data/ollama_data:/root/.ollama \
+      -p 11434:11434 \
+      my-ollama-llm
 }
 
+# Run the Open WebUI container
 open-webui-run(){
-docker run -d \
-  --name open-webui \
-  --network openwebui \
-  --restart always \
-  -v /home/lrocha/data/open-webui:/app/backend/data \
-  -p 3000:8080 \
-  -e OLLAMA_BASE_URL=http://ollama:11434 \
-  ghcr.io/open-webui/open-webui:ollama
+    # Stop any existing container named open-webui
+    docker stop open-webui 2>/dev/null || true
+    docker rm open-webui 2>/dev/null || true
 
+    docker run -d \
+      --name open-webui \
+      --network=host \
+      --restart always \
+      -v /home/lrocha/data/open-webui:/app/backend/data \
+      -e OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+      ghcr.io/open-webui/open-webui:ollama
 }
