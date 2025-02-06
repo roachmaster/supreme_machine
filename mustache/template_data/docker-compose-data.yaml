@@ -1,0 +1,5 @@
+docker_image_name: 'ollama'
+volume_mapping: '/home/lrocha/data/ollama_data:/root/.ollama'
+env_vars:
+ollama_data:
+value: '{.}/.ollama'

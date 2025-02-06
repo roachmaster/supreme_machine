@@ -1,0 +1,44 @@
+base:
+  version: '2'
+  render: true
+
+services:
+  ollama:
+    build: .
+    ports:
+      - "11434:11434"
+    volumes:
+      - "{{ volume_mapping }}"
+    environment:
+      - OLLAMA_DATA="{{ env_vars['ollama_data'] }}"
+    command:
+      - './llm-image-run'
+
+ollama-ingress:
+  build: .
+  ports:
+    - "8080:8080"
+  scheme: ingress
+  depends_on:
+    - ollama
+  volumes:
+    - "{{ volume_mapping }}"
+  environment:
+    - OLLAMA_DATA="{{ env_vars['ollama_data'] }}"
+
+volume_mapping:
+  - /home/lrocha/data/ollama_data:/root/.ollama
+
+env_vars:
+  ollama_data:
+    default: '{.}/.ollama'
+
+DockerBuild.yaml:
+  docker_image_name: 'ollama'
+  volume_mapping: "{{ volume_mapping }}"
+  env_vars:
+    ollama_data:
+      value: "{{ env_vars['ollama_data'] }}"
+
+volumes:
+  - /home/lrocha/data/ollama_data:/root/.ollama
