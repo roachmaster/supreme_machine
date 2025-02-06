@@ -2,7 +2,7 @@ import os
 import yaml
 from argparse import ArgumentParser
 from jinja2 import Template
-import logging  # Add this import
+import logging
 
 
 def save_output(rendered_content, output_path):
