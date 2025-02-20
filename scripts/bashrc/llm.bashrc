@@ -48,6 +48,7 @@ open-webui-run(){
     docker rm open-webui 2>/dev/null || true
 
     docker run -d \
+    -e PORT=3000 \
     -p 0.0.0.0:8080:3000 \
     --gpus all \
     --add-host=host.docker.internal:host-gateway \
