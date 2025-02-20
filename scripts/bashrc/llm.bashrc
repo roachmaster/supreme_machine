@@ -48,7 +48,7 @@ open-webui-run(){
     docker rm open-webui 2>/dev/null || true
 
     docker run -d \
-    -p 8080:3000 \
+    -p 0.0.0.0:8080:3000 \
     --gpus all \
     --add-host=host.docker.internal:host-gateway \
     -v /home/lrocha/data/open-webui:/app/backend/data \
