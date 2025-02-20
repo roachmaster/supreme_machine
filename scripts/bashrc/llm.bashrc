@@ -49,6 +49,7 @@ open-webui-run(){
 
     docker run -d \
       --name open-webui \
+      -p 3000:3000 \
       --network=host \
       --restart always \
       -v /home/lrocha/data/open-webui:/app/backend/data \
