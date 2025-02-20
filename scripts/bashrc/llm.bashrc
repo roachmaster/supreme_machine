@@ -41,6 +41,12 @@ llm-image-run(){
       my-ollama-llm
 }
 
+open-webui-stop(){
+    # Stop any existing container named open-webui
+    docker stop open-webui 2>/dev/null || true
+    docker rm open-webui 2>/dev/null || true
+}
+
 # Run the Open WebUI container
 open-webui-run(){
     # Stop any existing container named open-webui
