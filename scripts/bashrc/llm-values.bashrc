@@ -1,7 +1,5 @@
-
-# ==============================
-# CONFIGURATION VARIABLES
-# ==============================
+# llm-values.bashrc
+# Configuration values for LLM, Open WebUI, and Stable Diffusion containers
 
 # General
 DOCKER_GPU_FLAG="--gpus all"
@@ -20,10 +18,10 @@ OPEN_WEBUI_DATA_DIR="/home/lrocha/data/open-webui"
 
 # Stable Diffusion
 SD_CONTAINER="stable-diffusion"
-SD_IMAGE="hlky/stable-diffusion-webui:latest"
+SD_IMAGE="hlky/stable-diffusion-webui:latest"  # Change to another public image if preferred
 SD_PORT="7860"
 SD_MODELS_DIR="/home/lrocha/data/stable-diffusion/models"
 SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
 
-# GHCR Token File
+# GitHub Container Registry token file
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"
