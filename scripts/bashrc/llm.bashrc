@@ -43,11 +43,13 @@ sd-status() { docker ps -f "name=$SD_CONTAINER"; }
 
 # 🆕 FOOLPROOF AUTOMATED BUILD FUNCTION
 sd-build() {
-    TMP_DIR="/tmp/stable-diffusion-webui"
-    SCRIPT_DIR="$(realpath "${BASH_SOURCE%/*}")"
-    DOCKERFILE_PATH="$SCRIPT_DIR/../docker/sd/Dockerfile"
+    TMP_DIR="$SD_TMP_DIR"
+    DOCKERFILE_PATH="$SD_DOCKERFILE_PATH"
 
-    echo "🔄 Ensuring temporary build directory $TMP_DIR..."
+    echo "🔄 Using ROOT_DIR: $ROOT_DIR"
+    echo "🔄 Build directory: $TMP_DIR"
+    echo "🔄 Dockerfile path: $DOCKERFILE_PATH"
+
     rm -rf "$TMP_DIR" || { echo "❌ Failed to clean $TMP_DIR"; return 1; }
     mkdir -p "$TMP_DIR" || { echo "❌ Failed to create $TMP_DIR"; return 1; }
 
@@ -58,8 +60,8 @@ sd-build() {
     fi
 
     if [ ! -f "$DOCKERFILE_PATH" ]; then
-        echo "❌ Dockerfile not found at expected path: $DOCKERFILE_PATH"
-        echo "Please ensure docker/sd/Dockerfile exists."
+        echo "❌ Dockerfile not found at: $DOCKERFILE_PATH"
+        echo "💡 Expected path inside ROOT_DIR: $ROOT_DIR/docker/sd/Dockerfile"
         return 1
     fi
 
@@ -76,7 +78,7 @@ sd-build() {
 
     echo "✅ Docker build complete: $SD_IMAGE"
     cd - > /dev/null
-    # Optional clean-up toggle (uncomment to auto-clean):
+    # Optional cleanup
     # echo "🧹 Cleaning up $TMP_DIR..."
     # rm -rf "$TMP_DIR"
 }

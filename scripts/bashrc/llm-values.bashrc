@@ -1,6 +1,9 @@
 # llm-values.bashrc
 # Configuration values for LLM, Open WebUI, and Stable Diffusion containers
 
+# Root directory for repo
+ROOT_DIR="/home/lrocha/repos/supreme_machine"
+
 # General
 DOCKER_GPU_FLAG="--gpus all"
 
@@ -25,7 +28,7 @@ SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
 
 # Paths for build
 SD_TMP_DIR="/tmp/stable-diffusion-webui"
-SD_DOCKERFILE_PATH="/home/lrocha/repos/supreme_machine/docker/sd/Dockerfile"
+SD_DOCKERFILE_PATH="$ROOT_DIR/docker/sd/Dockerfile"
 
 # GitHub Container Registry token file
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"
