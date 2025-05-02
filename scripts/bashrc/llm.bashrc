@@ -1,6 +1,25 @@
 # llm.bashrc
 # Functions for daily LLM and Stable Diffusion Docker tasks (no docker-compose)
 
+# Load GHCR token from ~/.ghcr_token and export as env var
+read-ghcr-token() {
+    if [ -f ~/.ghcr_token ]; then
+        export GHCR_TOKEN=$(< ~/.ghcr_token)
+        echo "✅ GHCR token loaded and exported as GHCR_TOKEN."
+    else
+        echo "❌ Token file ~/.ghcr_token not found."
+    fi
+}
+
+# Login to GitHub Container Registry using exported token
+docker-ghcr-login() {
+    if [ -z "$GHCR_TOKEN" ]; then
+        echo "❌ GHCR_TOKEN is not set. Run 'read-ghcr-token' first."
+        return 1
+    fi
+    echo "$GHCR_TOKEN" | docker login ghcr.io -u $USER --password-stdin
+}
+
 # Stop (and remove) the LLM container
 llm-stop() {
     docker stop ollama 2>/dev/null || true
@@ -30,7 +49,6 @@ llm-pull() {
 # Run the LLM container
 llm-image-run(){
     llm-stop
-
     docker run -d \
       --name ollama \
       --gpus all \
@@ -72,15 +90,18 @@ sd-logs() {
     docker logs -f stable-diffusion
 }
 
-# Pull latest image for Automatic1111 (correct repo name)
+# Pull latest image for Automatic1111
 sd-pull() {
+    read-ghcr-token
+    docker-ghcr-login || return 1
     docker pull ghcr.io/abdbarho/stable-diffusion-webui:automatic
 }
 
 # Run Stable Diffusion container
 sd-run() {
+    read-ghcr-token
+    docker-ghcr-login || return 1
     sd-stop
-
     docker run -d \
         --gpus all \
         --name stable-diffusion \
