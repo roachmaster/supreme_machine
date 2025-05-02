@@ -45,11 +45,11 @@ CUDA_BASE_IMAGE="my-cuda-base:torch2.7-cu126-xformers"
 ###########################
 # CUDA + Torch + xFormers version config
 ###########################
-CUDA_VERSION="cu126"
-TORCH_VERSION="2.6.0"
-TORCHVISION_VERSION="0.21.0"
-TORCHAUDIO_VERSION="2.6.0"
-XFORMERS_CUDA_ARCH="8.9"
+CUDA_VERSION="cu126"            # CUDA toolkit version suffix
+TORCH_VERSION="2.7.0"           # Torch version
+TORCHVISION_VERSION="0.22.0"    # Torchvision version (built from source)
+TORCHAUDIO_VERSION="2.7.0"      # Torchaudio version
+XFORMERS_CUDA_ARCH="8.9"        # Compute capability for 4070 Ti
 
 ###########################
 # Stable Diffusion build paths

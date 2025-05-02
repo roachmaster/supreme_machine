@@ -169,7 +169,7 @@ sd-build() {
     docker-build-clean "$SD_IMAGE" "$TMP_DIR" "$TMP_DIR/Dockerfile"
 }
 
-# ✅ Build CUDA base image with dynamic version args
+# ✅ Build CUDA base image (dynamic build args from llm-values.bashrc)
 cuda-base-build() {
     local base_dockerfile="$ROOT_DIR/docker/cuda/Dockerfile"
     [[ ! -f "$base_dockerfile" ]] && { echo "❌ CUDA Dockerfile missing at $base_dockerfile"; return 1; }
@@ -177,9 +177,9 @@ cuda-base-build() {
     echo "⚙️  Building CUDA base image: $CUDA_BASE_IMAGE"
     docker build --rm --force-rm \
         --build-arg TORCH_VERSION="$TORCH_VERSION" \
-        --build-arg CUDA_VERSION="$CUDA_VERSION" \
-        --build-arg TORCHVISION_VERSION="$TORCHVISION_VERSION" \
         --build-arg TORCHAUDIO_VERSION="$TORCHAUDIO_VERSION" \
+        --build-arg TORCHVISION_VERSION="$TORCHVISION_VERSION" \
+        --build-arg CUDA_VERSION="$CUDA_VERSION" \
         --build-arg XFORMERS_CUDA_ARCH="$XFORMERS_CUDA_ARCH" \
         -t "$CUDA_BASE_IMAGE" "$ROOT_DIR/docker/cuda" || {
             echo "❌ CUDA base build failed."; return 1; }
