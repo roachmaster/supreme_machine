@@ -51,6 +51,14 @@ open-webui-status() { docker ps -f "name=$OPEN_WEBUI_CONTAINER"; }
 sd-logs() { docker logs -f "$SD_CONTAINER"; }
 sd-status() { docker ps -f "name=$SD_CONTAINER"; }
 
+logs-all() {
+    echo "📜 Streaming logs for all containers..."
+    docker logs -f "$OLLAMA_CONTAINER" &
+    docker logs -f "$OPEN_WEBUI_CONTAINER" &
+    docker logs -f "$SD_CONTAINER" &
+    wait
+}
+
 # ✅ Image pulls
 llm-pull() { docker pull "$OLLAMA_IMAGE"; }
 sd-pull() { read-ghcr-token; docker-ghcr-login || return 1; docker pull "$SD_IMAGE"; }
@@ -85,6 +93,33 @@ restart-all() {
     echo "✅ All containers restarted and reconnected to $DOCKER_NETWORK"
 }
 
+# ✅ Stop all containers
+stop-all() {
+    echo "🛑 Stopping all containers..."
+    docker stop "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
+}
+
+# ✅ Remove all containers
+remove-all() {
+    stop-all
+    echo "🗑️  Removing all containers..."
+    docker rm "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
+}
+
+# ✅ Exec into a container
+exec-into() {
+    local name="$1"
+    [[ -z "$name" ]] && { echo "❌ Missing container name"; return 1; }
+    echo "🖥️  Entering bash shell in container: $name"
+    docker exec -it "$name" bash
+}
+
+# ✅ Clean dangling images
+clean-dangling-images() {
+    echo "🧹 Cleaning dangling docker images..."
+    docker image prune -f
+}
+
 # ✅ Docker build + clean function
 docker-build-clean() {
     local image_name="$1" context_dir="$2" dockerfile_path="$3"
@@ -95,8 +130,7 @@ docker-build-clean() {
     docker build --rm --force-rm -t "$image_name" -f "$dockerfile_path" "$context_dir" || {
         echo "❌ Docker build failed."; return 1; }
 
-    echo "✅ Build complete. Cleaning dangling images..."
-    docker image prune -f
+    clean-dangling-images
 
     local whitelisted="${WHITELISTED_IMAGES[*]}"
     docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read -r entry; do

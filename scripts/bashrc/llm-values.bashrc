@@ -1,5 +1,5 @@
 # llm-values.bashrc
-# Configuration values for LLM, Open WebUI, and Stable Diffusion containers
+# ✅ Configuration values for LLM, Open WebUI, and Stable Diffusion containers
 
 ###########################
 # Root project directory
@@ -49,11 +49,12 @@ SD_DOCKERFILE_PATH="$ROOT_DIR/docker/sd/Dockerfile"
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"
 
 ###########################
-# Whitelisted Docker images (safe from cleanup)
+# ✅ Whitelisted Docker images (prevent auto-clean deletion)
 ###########################
 WHITELISTED_IMAGES=(
-    "$OLLAMA_IMAGE:latest"
-    "$OPEN_WEBUI_IMAGE"
-    "$SD_IMAGE:latest"
+    "${OLLAMA_IMAGE}:latest"
+    "${OPEN_WEBUI_IMAGE}"
+    "${SD_IMAGE}:latest"
     "ghcr.io/open-webui/open-webui:ollama"
+    "nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04"
 )
