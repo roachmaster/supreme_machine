@@ -4,16 +4,16 @@ FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 # ✅ Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ✅ Versions (injected via --build-arg or fallback defaults)
-ARG TORCH_VERSION=2.6.0
-ARG TORCHVISION_VERSION=0.21.0
-ARG TORCHAUDIO_VERSION=2.6.0
+# ✅ Versions (centralized)
+ARG TORCH_VERSION=2.7.0
+ARG TORCHAUDIO_VERSION=2.7.0
+ARG TORCHVISION_VERSION=0.22.0
 ARG CUDA_VERSION=cu126
 ARG XFORMERS_CUDA_ARCH="8.9"
 
 ENV TORCH_VERSION=${TORCH_VERSION}
-ENV TORCHVISION_VERSION=${TORCHVISION_VERSION}
 ENV TORCHAUDIO_VERSION=${TORCHAUDIO_VERSION}
+ENV TORCHVISION_VERSION=${TORCHVISION_VERSION}
 ENV CUDA_VERSION=${CUDA_VERSION}
 ENV XFORMERS_CUDA_ARCH=${XFORMERS_CUDA_ARCH}
 
@@ -36,15 +36,15 @@ RUN pip install torch==${TORCH_VERSION}+${CUDA_VERSION} --extra-index-url https:
 WORKDIR /tmp
 RUN git clone --branch v${TORCHVISION_VERSION} https://github.com/pytorch/vision.git \
     && cd vision \
-    && if [ -f requirements.txt ]; then reqfile=requirements.txt; else reqfile=requirements/requirements.txt; fi \
-    && pip install -r $reqfile \
+    && echo "📂 Contents of vision/requirements:" && ls requirements \
+    && pip install -r requirements/build.txt \
     && python setup.py bdist_wheel \
     && pip install dist/*.whl
 
 # ✅ Install torchaudio binary
 RUN pip install torchaudio==${TORCHAUDIO_VERSION}+${CUDA_VERSION} --extra-index-url https://download.pytorch.org/whl/${CUDA_VERSION}
 
-# ✅ Build xFormers from source (with submodules)
+# ✅ Build xFormers from source (with submodules!)
 RUN git clone --recursive https://github.com/facebookresearch/xformers.git \
     && cd xformers \
     && git submodule update --init --recursive \
@@ -64,14 +64,14 @@ WORKDIR /app
 # ✅ Clone Stable Diffusion WebUI
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-# ✅ Upgrade pip again (just in case)
+# ✅ Upgrade pip again (if needed)
 RUN pip install --upgrade pip
 
-# ✅ Install Stable Diffusion WebUI requirements
+# ✅ Install WebUI requirements
 RUN pip install -r requirements_versions.txt
 
 # ✅ Expose WebUI port
 EXPOSE 7860
 
-# ✅ Launch Stable Diffusion WebUI (with xformers!)
+# ✅ Launch WebUI (with xformers!)
 CMD ["python", "launch.py", "--listen", "--xformers"]
