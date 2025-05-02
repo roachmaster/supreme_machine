@@ -1,23 +1,9 @@
-# ✅ BASE IMAGE
+# ✅ BASE IMAGE: NVIDIA CUDA + cuDNN + Ubuntu
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
-# ✅ Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ✅ Centralized version variables
-ARG TORCH_VERSION=2.7.0
-ARG TORCHAUDIO_VERSION=2.7.0
-ARG TORCHVISION_VERSION=0.22.0
-ARG CUDA_VERSION=cu126
-ARG XFORMERS_CUDA_ARCH="8.9"
-
-ENV TORCH_VERSION=${TORCH_VERSION}
-ENV TORCHAUDIO_VERSION=${TORCHAUDIO_VERSION}
-ENV TORCHVISION_VERSION=${TORCHVISION_VERSION}
-ENV CUDA_VERSION=${CUDA_VERSION}
-ENV XFORMERS_CUDA_ARCH=${XFORMERS_CUDA_ARCH}
-
-# ✅ Install Python 3.10 + build dependencies
+# ✅ Install Python + system deps
 RUN apt-get update && apt-get install -y \
     python3.10 python3.10-venv python3.10-distutils python3-pip \
     git curl ca-certificates \
@@ -29,20 +15,20 @@ RUN apt-get update && apt-get install -y \
 # ✅ Upgrade pip
 RUN pip install --upgrade pip
 
-# ✅ Install PyTorch prebuilt binary
-RUN pip install torch==${TORCH_VERSION}+${CUDA_VERSION} --extra-index-url https://download.pytorch.org/whl/${CUDA_VERSION}
+# ✅ Install PyTorch (compatible with CUDA 12.6)
+ARG TORCH_VERSION=2.7.0
+ARG TORCHVISION_VERSION=0.22.0
+ARG TORCHAUDIO_VERSION=2.7.0
+ARG CUDA_VERSION=cu126
+ARG XFORMERS_CUDA_ARCH=8.9
 
-# ✅ Build torchvision from source (modern pyproject.toml build)
+RUN pip install torch==${TORCH_VERSION}+${CUDA_VERSION} \
+    torchvision==${TORCHVISION_VERSION}+${CUDA_VERSION} \
+    torchaudio==${TORCHAUDIO_VERSION}+${CUDA_VERSION} \
+    --extra-index-url https://download.pytorch.org/whl/${CUDA_VERSION}
+
+# ✅ Build xFormers from source
 WORKDIR /tmp
-RUN git clone --branch v${TORCHVISION_VERSION} https://github.com/pytorch/vision.git \
-    && cd vision \
-    && echo "📂 Listing vision repo contents:" && ls -l \
-    && pip install .
-
-# ✅ Install torchaudio prebuilt binary
-RUN pip install torchaudio==${TORCHAUDIO_VERSION}+${CUDA_VERSION} --extra-index-url https://download.pytorch.org/whl/${CUDA_VERSION}
-
-# ✅ Build xFormers from source (with submodules!)
 RUN git clone --recursive https://github.com/facebookresearch/xformers.git \
     && cd xformers \
     && git submodule update --init --recursive \
@@ -50,26 +36,9 @@ RUN git clone --recursive https://github.com/facebookresearch/xformers.git \
     && TORCH_CUDA_ARCH_LIST="${XFORMERS_CUDA_ARCH}" FORCE_CUDA=1 python setup.py bdist_wheel \
     && pip install dist/*.whl
 
-# ✅ Verify xFormers
+# ✅ Verify xFormers installed
 RUN python -m xformers.info || echo "⚠️ xFormers info failed (expected outside runtime)"
 
-# ✅ CUDA runtime env
-ENV CUDA_HOME=/usr/local/cuda
-
-# ✅ Set working directory for app
-WORKDIR /app
-
-# ✅ Clone Stable Diffusion WebUI
-RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
-
-# ✅ Upgrade pip again
-RUN pip install --upgrade pip
-
-# ✅ Install WebUI dependencies
-RUN pip install -r requirements_versions.txt
-
-# ✅ Expose WebUI port
-EXPOSE 7860
-
-# ✅ Launch WebUI with xFormers enabled
-CMD ["python", "launch.py", "--listen", "--xformers"]
+# ✅ Cleanup
+WORKDIR /
+RUN rm -rf /tmp/*
