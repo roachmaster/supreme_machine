@@ -38,6 +38,16 @@ SD_MODELS_DIR="/home/lrocha/data/stable-diffusion/models"
 SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
 
 ###########################
+# ControlNet extension model directory
+###########################
+CONTROLNET_MODELS_DIR="/home/lrocha/data/controlnet-models"
+
+###########################
+# AnimateDiff extension model directory
+###########################
+ANIMATEDIFF_MODELS_DIR="/home/lrocha/data/animatediff-models"
+
+###########################
 # CUDA + Torch + xFormers base image config
 ###########################
 CUDA_BASE_IMAGE="my-cuda-base:torch2.7-cu126-xformers"
