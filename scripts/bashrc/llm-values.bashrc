@@ -73,6 +73,11 @@ SD_DOCKERFILE_PATH="$ROOT_DIR/docker/sd/Dockerfile"
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"
 
 ###########################
+# Hugging Face token file
+###########################
+HUGGINGFACE_TOKEN_FILE="$HOME/.hf_token"
+
+###########################
 # ✅ Whitelisted Docker images
 ###########################
 WHITELISTED_IMAGES=(

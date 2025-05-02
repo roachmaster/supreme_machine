@@ -1,5 +1,5 @@
 # llm.bashrc
-# ✅ Functions for LLM, Open WebUI, Stable Diffusion, and CUDA Base Docker tasks
+# ✅ Functions for LLM, Open WebUI, Stable Diffusion, CUDA Base, and Hugging Face setup
 
 # Load configuration values
 if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
@@ -36,6 +36,16 @@ run-container() {
 # ✅ Authentication helpers
 read-ghcr-token() {
     [[ -f "$GHCR_TOKEN_FILE" ]] && { export GHCR_TOKEN=$(< "$GHCR_TOKEN_FILE"); echo "✅ GHCR token loaded."; } || echo "❌ Token file not found."
+}
+
+read-huggingface-token() {
+    [[ -f "$HUGGINGFACE_TOKEN_FILE" ]] && { export HF_TOKEN=$(< "$HUGGINGFACE_TOKEN_FILE"); echo "✅ Hugging Face token loaded."; } || echo "❌ Hugging Face token file not found."
+}
+
+hf-login() {
+    read-huggingface-token
+    [[ -z "$HF_TOKEN" ]] && { echo "❌ HF_TOKEN not set."; return 1; }
+    huggingface-cli login --token "$HF_TOKEN" || echo "⚠️ Hugging Face login failed"
 }
 
 docker-ghcr-login() {
@@ -75,6 +85,7 @@ open-webui-run() {
 }
 
 sd-run() {
+    hf-login
     read-ghcr-token; docker-ghcr-login || return 1
     run-container "$SD_CONTAINER" "$SD_IMAGE" \
         "-p $SD_PORT:$SD_PORT" \
@@ -154,6 +165,7 @@ docker-build-clean() {
 
 # ✅ Build Stable Diffusion image
 sd-build() {
+    hf-login
     TMP_DIR="$SD_TMP_DIR"
     DOCKERFILE_PATH="$SD_DOCKERFILE_PATH"
 
@@ -173,7 +185,7 @@ sd-build() {
     docker-build-clean "$SD_IMAGE" "$TMP_DIR" "$TMP_DIR/Dockerfile"
 }
 
-# ✅ Build CUDA base image (dynamic build args from llm-values.bashrc)
+# ✅ Build CUDA base image
 cuda-base-build() {
     local base_dockerfile="$ROOT_DIR/docker/cuda/Dockerfile"
     [[ ! -f "$base_dockerfile" ]] && { echo "❌ CUDA Dockerfile missing at $base_dockerfile"; return 1; }
