@@ -21,8 +21,10 @@ ensure-docker-network() {
 # ✅ Universal Docker run wrapper
 run-container() {
     local name="$1" image="$2" ports="$3" volumes="$4" envs="${5:-}" extras="${6:-}"
+
     [[ -z "$name" || -z "$image" || -z "$ports" || -z "$volumes" ]] && {
         echo "❌ Missing required docker run args"; return 1; }
+
     echo "🚀 Running container: $name → $image"
     ensure-docker-network
     docker stop "$name" 2>/dev/null || true
@@ -45,10 +47,14 @@ ensure-huggingface-cli() {
         echo "📦 Installing python3-pip..."
         sudo apt-get update && sudo apt-get install -y python3-pip || { echo "❌ Failed to install pip."; return 1; }
     fi
-    if ! command -v huggingface-cli >/dev/null 2>&1; then
-        echo "📦 Installing huggingface-cli..."
-        pip install --user --upgrade huggingface_hub
+    if ! command -v pipx >/dev/null 2>&1; then
+        echo "📦 Installing pipx..."
+        sudo apt-get install -y pipx || { echo "❌ Failed to install pipx."; return 1; }
         export PATH="$HOME/.local/bin:$PATH"
+    fi
+    if ! command -v huggingface-cli >/dev/null 2>&1; then
+        echo "📦 Installing huggingface-cli via pipx..."
+        pipx install huggingface_hub || { echo "❌ Failed to install huggingface-cli via pipx."; return 1; }
     fi
 }
 
@@ -111,9 +117,11 @@ restart-all() {
     echo "🔄 Restarting all containers..."
     docker stop "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
     docker rm "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
+
     llm-image-run
     open-webui-run
     sd-run
+
     echo "✅ All containers restarted and reconnected to $DOCKER_NETWORK"
 }
 
@@ -154,10 +162,13 @@ docker-build-clean() {
     local image_name="$1" context_dir="$2" dockerfile_path="$3"
     [[ -z "$image_name" || -z "$context_dir" || -z "$dockerfile_path" ]] && {
         echo "❌ docker-build-clean missing args"; return 1; }
+
     echo "⚙️  Building docker image: $image_name"
     docker build --rm --force-rm -t "$image_name" -f "$dockerfile_path" "$context_dir" || {
         echo "❌ Docker build failed."; return 1; }
+
     clean-dangling-images
+
     local whitelisted="${WHITELISTED_IMAGES[*]}"
     docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read -r entry; do
         local repo_tag=$(echo "$entry" | awk '{print $1}')
@@ -174,15 +185,20 @@ sd-build() {
     hf-login
     TMP_DIR="$SD_TMP_DIR"
     DOCKERFILE_PATH="$SD_DOCKERFILE_PATH"
+
     echo "🔄 Using ROOT_DIR: $ROOT_DIR"
     echo "🔄 Build directory: $TMP_DIR"
     echo "🔄 Dockerfile path: $DOCKERFILE_PATH"
+
     rm -rf "$TMP_DIR" || { echo "❌ Failed to clean $TMP_DIR"; return 1; }
     mkdir -p "$TMP_DIR" || { echo "❌ Failed to create $TMP_DIR"; return 1; }
+
     echo "📥 Cloning AUTOMATIC1111/stable-diffusion-webui into $TMP_DIR..."
     git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git "$TMP_DIR" || { echo "❌ Git clone failed."; return 1; }
+
     [[ ! -f "$DOCKERFILE_PATH" ]] && { echo "❌ Dockerfile missing at $DOCKERFILE_PATH"; return 1; }
     cp "$DOCKERFILE_PATH" "$TMP_DIR/Dockerfile" || { echo "❌ Failed to copy Dockerfile."; return 1; }
+
     docker-build-clean "$SD_IMAGE" "$TMP_DIR" "$TMP_DIR/Dockerfile"
 }
 
@@ -190,6 +206,7 @@ sd-build() {
 cuda-base-build() {
     local base_dockerfile="$ROOT_DIR/docker/cuda/Dockerfile"
     [[ ! -f "$base_dockerfile" ]] && { echo "❌ CUDA Dockerfile missing at $base_dockerfile"; return 1; }
+
     echo "⚙️  Building CUDA base image: $CUDA_BASE_IMAGE"
     docker build --rm --force-rm \
         --build-arg TORCH_VERSION="$TORCH_VERSION" \
@@ -199,5 +216,6 @@ cuda-base-build() {
         --build-arg XFORMERS_CUDA_ARCH="$XFORMERS_CUDA_ARCH" \
         -t "$CUDA_BASE_IMAGE" "$ROOT_DIR/docker/cuda" || {
             echo "❌ CUDA base build failed."; return 1; }
+
     clean-dangling-images
 }
