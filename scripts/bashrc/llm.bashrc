@@ -67,6 +67,22 @@ open-webui-run() {
 sd-run() { read-ghcr-token; docker-ghcr-login || return 1; run-container "$SD_CONTAINER" "$SD_IMAGE" "-p $SD_PORT:$SD_PORT" "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output"; }
 
 ###############################################
+# ✅ Restart all containers (in correct order)
+###############################################
+restart-all() {
+    echo "🔄 Restarting all containers..."
+
+    docker stop "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
+    docker rm "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
+
+    llm-image-run
+    open-webui-run
+    sd-run
+
+    echo "✅ All containers restarted and reconnected to $DOCKER_NETWORK"
+}
+
+###############################################
 # ✅ GENERIC DOCKER BUILD + CLEAN FUNCTION
 ###############################################
 docker-build-clean() {
