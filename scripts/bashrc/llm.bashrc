@@ -76,7 +76,11 @@ open-webui-run() {
 
 sd-run() {
     read-ghcr-token; docker-ghcr-login || return 1
-    run-container "$SD_CONTAINER" "$SD_IMAGE" "-p $SD_PORT:$SD_PORT" "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output" \
+    run-container "$SD_CONTAINER" "$SD_IMAGE" \
+        "-p $SD_PORT:$SD_PORT" \
+        "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output \
+         -v $CONTROLNET_MODELS_DIR:/app/extensions/sd-webui-controlnet/models \
+         -v $ANIMATEDIFF_MODELS_DIR:/app/extensions/sd-webui-animatediff/models" \
         "-e XFORMERS_DISABLE=1"
 }
 
