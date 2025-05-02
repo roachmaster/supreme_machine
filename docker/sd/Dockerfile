@@ -16,9 +16,8 @@ RUN pip install -r requirements_versions.txt
 RUN git clone https://github.com/Mikubill/sd-webui-controlnet.git /app/extensions/sd-webui-controlnet
 RUN pip install -r /app/extensions/sd-webui-controlnet/requirements.txt
 
-# ✅ Install AnimateDiff extension
+# ✅ Install AnimateDiff extension (no requirements.txt)
 RUN git clone https://github.com/continue-revolution/sd-webui-animatediff.git /app/extensions/sd-webui-animatediff
-RUN pip install -r /app/extensions/sd-webui-animatediff/requirements.txt
 
 # ✅ (Optional) You can pre-download models here if needed:
 # COPY controlnet-models/*.pth /app/extensions/sd-webui-controlnet/models/
