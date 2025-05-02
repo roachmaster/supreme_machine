@@ -42,7 +42,16 @@ read-huggingface-token() {
     [[ -f "$HUGGINGFACE_TOKEN_FILE" ]] && { export HF_TOKEN=$(< "$HUGGINGFACE_TOKEN_FILE"); echo "✅ Hugging Face token loaded."; } || echo "❌ Hugging Face token file not found."
 }
 
+ensure-huggingface-cli() {
+    if ! command -v huggingface-cli >/dev/null 2>&1; then
+        echo "📦 Installing huggingface-cli..."
+        pip install --user --upgrade huggingface_hub
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+}
+
 hf-login() {
+    ensure-huggingface-cli
     read-huggingface-token
     [[ -z "$HF_TOKEN" ]] && { echo "❌ HF_TOKEN not set."; return 1; }
     huggingface-cli login --token "$HF_TOKEN" || echo "⚠️ Hugging Face login failed"
