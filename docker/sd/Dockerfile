@@ -1,10 +1,9 @@
 # ✅ BASE IMAGE
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
-# ✅ Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ✅ Install Python 3.10 + build dependencies
+# ✅ Install Python + build tools
 RUN apt-get update && apt-get install -y \
     python3.10 python3.10-venv python3.10-distutils python3-pip \
     git curl ca-certificates \
@@ -13,22 +12,28 @@ RUN apt-get update && apt-get install -y \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
     && rm -rf /var/lib/apt/lists/*
 
-# ✅ WORKDIR
-WORKDIR /app
+# ✅ Install PyTorch matching CUDA version
+RUN pip install --upgrade pip \
+    && pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2 --extra-index-url https://download.pytorch.org/whl/cu121
 
-# ✅ Clone Stable Diffusion WebUI
+# ✅ Clone and build xformers from source
+WORKDIR /tmp
+RUN git clone https://github.com/facebookresearch/xformers.git \
+    && cd xformers \
+    && pip install -r requirements.txt \
+    && TORCH_CUDA_ARCH_LIST="8.9" FORCE_CUDA=1 python setup.py bdist_wheel \
+    && pip install dist/*.whl
+
+# ✅ Move to app
+WORKDIR /app
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-# ✅ Upgrade pip and install python dependencies (except xformers)
-RUN pip install --upgrade pip \
-    && pip install -r requirements_versions.txt --extra-index-url https://download.pytorch.org/whl/cu121
+# ✅ Install SD dependencies
+RUN pip install -r requirements_versions.txt
 
-# ✅ Install xFormers from source (compiles inside Docker)
-RUN pip install ninja \
-    && pip install git+https://github.com/facebookresearch/xformers.git
+# ✅ Optional: print xformers info for debug
+RUN python -m xformers.info
 
-# ✅ EXPOSE port
 EXPOSE 7860
 
-# ✅ Run WebUI
 CMD ["python", "launch.py", "--listen", "--xformers"]
