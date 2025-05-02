@@ -8,9 +8,6 @@ main() {
     update_system_and_upgrade
     check_nvidia_gpu_status
     verify_or_install_docker
-    verify_or_install_docker_compose
-    pull_sample_llm_image
-    create_sample_docker_compose_file
     configure_ufw_firewall_rules
 }
 
@@ -76,34 +73,6 @@ verify_or_install_docker_compose() {
     else
         install_docker_compose
     fi
-}
-
-# Install Docker Compose (3 lines)
-install_docker_compose() {
-    echo "Installing Docker Compose..."
-    sudo apt install docker-compose -y
-    echo "Docker Compose installed."
-}
-
-##############################
-# Step 6: Pull a Sample LLM Docker Image (prompt user)
-##############################
-pull_sample_llm_image() {
-    read -p "Pull sample LLM Docker image (huggingface/transformers-pytorch-gpu:latest)? (y/n): " ans
-    [[ $ans =~ ^[Yy]$ ]] && { docker pull huggingface/transformers-pytorch-gpu:latest; echo "Image pulled."; } || echo "Image pull skipped."
-}
-
-##############################
-# Step 7: Create a Sample Docker Compose File for LLM
-##############################
-create_sample_docker_compose_file() {
-    local file="docker-compose.llm.yml"
-    [ ! -f "$file" ] && { echo "Creating $file..."; create_docker_compose_contents > "$file"; echo "$file created."; } || echo "$file exists."
-}
-
-# One-line function to echo the docker-compose content using ANSI-C quoting
-create_docker_compose_contents() {
-    echo $'version: \'3.8\'\nservices:\n  llm:\n    image: huggingface/transformers-pytorch-gpu:latest\n    deploy:\n      resources:\n        reservations:\n          devices:\n            - driver: nvidia\n              count: all\n              capabilities: [gpu]\n    ports:\n      - "8000:8000"\n    volumes:\n      - ./models:/app/models\n      - ./logs:/app/logs\n    environment:\n      - MODEL_PATH=/app/models'
 }
 
 ##############################
