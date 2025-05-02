@@ -172,3 +172,8 @@ cuda-base-build() {
     echo "⚙️  Building CUDA base image: $CUDA_BASE_IMAGE"
     docker-build-clean "$CUDA_BASE_IMAGE" "$ROOT_DIR/docker/cuda" "$base_dockerfile"
 }
+
+remove-all-containers() {
+    echo "🗑️  Removing ALL containers (running and stopped)..."
+    docker rm -f $(docker ps -aq) 2>/dev/null || echo "✅ No containers to remove."
+}
