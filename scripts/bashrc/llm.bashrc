@@ -1,5 +1,5 @@
 # llm.bashrc
-# ✅ Functions for LLM, Open WebUI, Stable Diffusion, CUDA Base, and Hugging Face setup
+# ✅ Functions for LLM, Open WebUI, Stable Diffusion, CUDA Base, Hugging Face setup
 
 # Load configuration values
 if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
@@ -63,6 +63,30 @@ hf-login() {
     read-huggingface-token
     [[ -z "$HF_TOKEN" ]] && { echo "❌ HF_TOKEN not set."; return 1; }
     huggingface-cli login --token "$HF_TOKEN" || echo "⚠️ Hugging Face login failed"
+}
+
+# ✅ Hugging Face model downloader (with check!)
+hf-download-model() {
+    local repo="$1"
+    local file="$2"
+    [[ -z "$repo" || -z "$file" ]] && {
+        echo "❌ Usage: hf-download-model <REPO> <FILENAME>"; return 1; }
+
+    read-huggingface-token
+    [[ -z "$HF_TOKEN" ]] && { echo "❌ HF_TOKEN not set."; return 1; }
+
+    local output="${SD_MODELS_DIR}/${file}"
+    if [ -f "$output" ]; then
+        echo "✅ Model already exists: $output (skipping download)"
+        return 0
+    fi
+
+    local url="https://huggingface.co/${repo}/resolve/main/${file}"
+    echo "⬇️  Downloading $file from $repo to $output..."
+    curl -L -o "$output" -H "Authorization: Bearer $HF_TOKEN" "$url" || {
+        echo "❌ Download failed"; return 1; }
+
+    echo "✅ Download complete: $output"
 }
 
 docker-ghcr-login() {
