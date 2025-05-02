@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install --upgrade pip
 
-# ✅ Install torch/vision/audio dynamically
+# ✅ Install torch/vision/audio dynamically (now matching versions!)
 RUN pip install --force-reinstall \
     torch==${TORCH_VERSION}+${CUDA_VERSION} \
     torchvision==${TORCHVISION_VERSION}+${CUDA_VERSION} \

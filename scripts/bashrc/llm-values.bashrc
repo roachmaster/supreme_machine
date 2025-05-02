@@ -42,11 +42,13 @@ SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
 ###########################
 CUDA_BASE_IMAGE="my-cuda-base:torch2.7-cu126-xformers"
 
-# ✅ Build versions
-TORCH_VERSION="2.7.0"
+###########################
+# CUDA + Torch + xFormers version config
+###########################
 CUDA_VERSION="cu126"
+TORCH_VERSION="2.6.0"
 TORCHVISION_VERSION="0.21.0"
-TORCHAUDIO_VERSION="2.7.0"
+TORCHAUDIO_VERSION="2.6.0"
 XFORMERS_CUDA_ARCH="8.9"
 
 ###########################
