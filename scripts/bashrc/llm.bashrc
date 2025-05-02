@@ -1,5 +1,5 @@
 # llm.bashrc
-# Functions for daily LLM Docker tasks (no docker-compose)
+# Functions for daily LLM and Stable Diffusion Docker tasks (no docker-compose)
 
 # Stop (and remove) the LLM container
 llm-stop() {
@@ -14,7 +14,6 @@ llm-logs() {
 
 # Build (or rebuild) the LLM image from a Dockerfile (assuming local Dockerfile)
 llm-rebuild() {
-    # Adjust the Docker build context and Dockerfile path as needed.
     docker build -t my-ollama-llm .
 }
 
@@ -30,7 +29,6 @@ llm-pull() {
 
 # Run the LLM container
 llm-image-run(){
-    # Stop any running container named ollama first
     llm-stop
 
     docker run -d \
@@ -42,14 +40,12 @@ llm-image-run(){
 }
 
 open-webui-stop(){
-    # Stop any existing container named open-webui
     docker stop open-webui 2>/dev/null || true
     docker rm open-webui 2>/dev/null || true
 }
 
 # Run the Open WebUI container
 open-webui-run(){
-    # Stop any existing container named open-webui
     docker stop open-webui 2>/dev/null || true
     docker rm open-webui 2>/dev/null || true
 
@@ -76,14 +72,13 @@ sd-logs() {
     docker logs -f stable-diffusion
 }
 
-# Pull latest image for Automatic1111 (from AbdBarho repo)
+# Pull latest image for Automatic1111 (correct repo name)
 sd-pull() {
-    docker pull ghcr.io/abdelbarho/stable-diffusion-webui:automatic
+    docker pull ghcr.io/abdbarho/stable-diffusion-webui:automatic
 }
 
 # Run Stable Diffusion container
 sd-run() {
-    # Stop any running container first
     sd-stop
 
     docker run -d \
@@ -92,7 +87,7 @@ sd-run() {
         -p 7860:7860 \
         -v /home/lrocha/data/stable-diffusion/models:/data/models \
         -v /home/lrocha/data/stable-diffusion/output:/data/output \
-        ghcr.io/abdelbarho/stable-diffusion-webui:automatic
+        ghcr.io/abdbarho/stable-diffusion-webui:automatic
 }
 
 # Check status
