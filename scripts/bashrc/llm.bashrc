@@ -1,6 +1,7 @@
 # llm.bashrc
 # Functions for daily LLM and Stable Diffusion Docker tasks (no docker-compose)
 
+# 🆕 AUTOMATED BUILD FUNCTION
 # Load configuration values
 if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
     source "${BASH_SOURCE%/*}/llm-values.bashrc"
@@ -8,6 +9,7 @@ if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
 else
     echo "⚠️  llm-values.bashrc not found in ${BASH_SOURCE%/*}. Using defaults."
 fi
+
 
 read-ghcr-token() { if [ -f "$GHCR_TOKEN_FILE" ]; then export GHCR_TOKEN=$(< "$GHCR_TOKEN_FILE"); echo "✅ GHCR token loaded."; else echo "❌ Token file $GHCR_TOKEN_FILE not found."; fi; }
 docker-ghcr-login() { if [ -z "$GHCR_TOKEN" ]; then echo "❌ GHCR_TOKEN not set. Run 'read-ghcr-token' first."; return 1; fi; echo "$GHCR_TOKEN" | docker login ghcr.io -u $USER --password-stdin; }
@@ -41,9 +43,14 @@ sd-run() {
 }
 sd-status() { docker ps -f "name=$SD_CONTAINER"; }
 
-# 🆕 AUTOMATED BUILD FUNCTION
+
+# All previous functions here (no changes)...
+
+# 🆕 AUTOMATED BUILD FUNCTION (uses static Dockerfile)
 sd-build() {
     TMP_DIR="/tmp/stable-diffusion-webui"
+    DOCKERFILE_PATH="${BASH_SOURCE%/*}/../docker/sd/Dockerfile"
+
     echo "🔄 Setting up build directory at $TMP_DIR..."
     rm -rf "$TMP_DIR"
     mkdir -p "$TMP_DIR"
@@ -52,17 +59,13 @@ sd-build() {
     echo "📥 Cloning AUTOMATIC1111/stable-diffusion-webui..."
     git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-    echo "📝 Writing Dockerfile..."
-    cat <<EOF > Dockerfile
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt install -y git python3 python3-pip wget curl && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
-COPY . /app
-RUN pip3 install -r requirements.txt
-EXPOSE $SD_PORT
-CMD ["python3", "launch.py", "--listen", "--xformers"]
-EOF
+    if [ ! -f "$DOCKERFILE_PATH" ]; then
+        echo "❌ Dockerfile not found at $DOCKERFILE_PATH"
+        return 1
+    fi
+
+    echo "📄 Copying Dockerfile from $DOCKERFILE_PATH..."
+    cp "$DOCKERFILE_PATH" Dockerfile
 
     echo "⚙️  Building Docker image: $SD_IMAGE..."
     docker build -t "$SD_IMAGE" .
@@ -70,6 +73,6 @@ EOF
     echo "✅ Build complete. Image: $SD_IMAGE"
     cd - > /dev/null
 
-    # Optionally clean tmp directory
+    # Optionally clean tmp dir:
     # rm -rf "$TMP_DIR"
 }
