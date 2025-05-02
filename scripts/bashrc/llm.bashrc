@@ -115,3 +115,5 @@ sd-run() {
 sd-status() {
     docker ps -f name=stable-diffusion
 }
+
+read-ghcr-token
