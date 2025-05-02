@@ -1,5 +1,5 @@
 # llm.bashrc
-# ✅ Functions for LLM, Open WebUI, and Stable Diffusion Docker tasks
+# ✅ Functions for LLM, Open WebUI, Stable Diffusion, and CUDA Base Docker tasks
 
 # Load configuration values
 if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
@@ -162,4 +162,13 @@ sd-build() {
     cp "$DOCKERFILE_PATH" "$TMP_DIR/Dockerfile" || { echo "❌ Failed to copy Dockerfile."; return 1; }
 
     docker-build-clean "$SD_IMAGE" "$TMP_DIR" "$TMP_DIR/Dockerfile"
+}
+
+# ✅ Build CUDA base image
+cuda-base-build() {
+    local base_dockerfile="$ROOT_DIR/docker/cuda/Dockerfile"
+    [[ ! -f "$base_dockerfile" ]] && { echo "❌ CUDA Dockerfile missing at $base_dockerfile"; return 1; }
+
+    echo "⚙️  Building CUDA base image: $CUDA_BASE_IMAGE"
+    docker-build-clean "$CUDA_BASE_IMAGE" "$ROOT_DIR/docker/cuda" "$base_dockerfile"
 }

@@ -1,5 +1,5 @@
 # llm-values.bashrc
-# ✅ Configuration values for LLM, Open WebUI, and Stable Diffusion containers
+# ✅ Configuration values for LLM, Open WebUI, Stable Diffusion, and CUDA base
 
 ###########################
 # Root project directory
@@ -32,10 +32,15 @@ OPEN_WEBUI_DATA_DIR="/home/lrocha/data/open-webui"
 # Stable Diffusion container config
 ###########################
 SD_CONTAINER="stable-diffusion"
-SD_IMAGE="my-stable-diffusion-webui"  # 📝 local built image name
+SD_IMAGE="my-stable-diffusion-webui"  # 📝 downstream app image
 SD_PORT="7860"
 SD_MODELS_DIR="/home/lrocha/data/stable-diffusion/models"
 SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
+
+###########################
+# CUDA + Torch + xFormers base image config
+###########################
+CUDA_BASE_IMAGE="my-cuda-base:torch2.7-cu126-xformers"
 
 ###########################
 # Stable Diffusion build paths
@@ -57,4 +62,5 @@ WHITELISTED_IMAGES=(
     "${SD_IMAGE}:latest"
     "ghcr.io/open-webui/open-webui:ollama"
     "nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04"
+    "${CUDA_BASE_IMAGE}"
 )
