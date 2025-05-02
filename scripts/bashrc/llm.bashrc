@@ -1,5 +1,5 @@
 # llm.bashrc
-# Functions for daily LLM and Stable Diffusion Docker tasks (no docker-compose)
+# ✅ Functions for LLM, Open WebUI, and Stable Diffusion Docker tasks
 
 # Load configuration values
 if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
@@ -9,11 +9,9 @@ else
     echo "⚠️  llm-values.bashrc not found in ${BASH_SOURCE%/*}. Using defaults."
 fi
 
-# Ensure shared Docker network exists
+# ✅ Ensure shared Docker network
 ensure-docker-network() {
-    if [ -z "$DOCKER_NETWORK" ]; then
-        export DOCKER_NETWORK="llm-network"
-    fi
+    if [ -z "$DOCKER_NETWORK" ]; then export DOCKER_NETWORK="llm-network"; fi
     if ! docker network inspect "$DOCKER_NETWORK" >/dev/null 2>&1; then
         echo "🔧 Creating Docker network: $DOCKER_NETWORK"
         docker network create "$DOCKER_NETWORK"
@@ -35,7 +33,7 @@ run-container() {
       $DOCKER_GPU_FLAG $ports $volumes $envs $extras "$image"
 }
 
-# Auth helpers
+# ✅ Authentication helpers
 read-ghcr-token() {
     [[ -f "$GHCR_TOKEN_FILE" ]] && { export GHCR_TOKEN=$(< "$GHCR_TOKEN_FILE"); echo "✅ GHCR token loaded."; } || echo "❌ Token file not found."
 }
@@ -45,7 +43,7 @@ docker-ghcr-login() {
     echo "$GHCR_TOKEN" | docker login ghcr.io -u $USER --password-stdin
 }
 
-# Logs/status
+# ✅ Logs/status
 llm-logs() { docker logs -f "$OLLAMA_CONTAINER"; }
 llm-status() { docker ps -f "name=$OLLAMA_CONTAINER"; }
 open-webui-logs() { docker logs -f "$OPEN_WEBUI_CONTAINER"; }
@@ -53,25 +51,30 @@ open-webui-status() { docker ps -f "name=$OPEN_WEBUI_CONTAINER"; }
 sd-logs() { docker logs -f "$SD_CONTAINER"; }
 sd-status() { docker ps -f "name=$SD_CONTAINER"; }
 
-# Image pulls
+# ✅ Image pulls
 llm-pull() { docker pull "$OLLAMA_IMAGE"; }
 sd-pull() { read-ghcr-token; docker-ghcr-login || return 1; docker pull "$SD_IMAGE"; }
 
-# ✅ Runners
-llm-image-run() { run-container "$OLLAMA_CONTAINER" "$OLLAMA_IMAGE" "-p $OLLAMA_PORT:$OLLAMA_PORT" "-v $OLLAMA_DATA_DIR:/root/.ollama"; }
+# ✅ Run containers
+llm-image-run() {
+    run-container "$OLLAMA_CONTAINER" "$OLLAMA_IMAGE" "-p $OLLAMA_PORT:$OLLAMA_PORT" "-v $OLLAMA_DATA_DIR:/root/.ollama"
+}
+
 open-webui-run() {
     run-container "$OPEN_WEBUI_CONTAINER" "$OPEN_WEBUI_IMAGE" "-p 0.0.0.0:$OPEN_WEBUI_PORT:$OPEN_WEBUI_PORT" "-v $OPEN_WEBUI_DATA_DIR:/app/backend/data" \
         "-e OLLAMA_BASE_URL=http://$OLLAMA_CONTAINER:$OLLAMA_PORT -e PORT=$OPEN_WEBUI_PORT" \
         "--add-host=host.docker.internal:host-gateway --restart always"
 }
-sd-run() { read-ghcr-token; docker-ghcr-login || return 1; run-container "$SD_CONTAINER" "$SD_IMAGE" "-p $SD_PORT:$SD_PORT" "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output"; }
 
-###############################################
-# ✅ Restart all containers (in correct order)
-###############################################
+sd-run() {
+    read-ghcr-token; docker-ghcr-login || return 1
+    run-container "$SD_CONTAINER" "$SD_IMAGE" "-p $SD_PORT:$SD_PORT" "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output" \
+        "-e XFORMERS_DISABLE=1"
+}
+
+# ✅ Restart all containers
 restart-all() {
     echo "🔄 Restarting all containers..."
-
     docker stop "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
     docker rm "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
 
@@ -82,12 +85,9 @@ restart-all() {
     echo "✅ All containers restarted and reconnected to $DOCKER_NETWORK"
 }
 
-###############################################
-# ✅ GENERIC DOCKER BUILD + CLEAN FUNCTION
-###############################################
+# ✅ Docker build + clean function
 docker-build-clean() {
     local image_name="$1" context_dir="$2" dockerfile_path="$3"
-
     [[ -z "$image_name" || -z "$context_dir" || -z "$dockerfile_path" ]] && {
         echo "❌ docker-build-clean missing args"; return 1; }
 
@@ -95,14 +95,13 @@ docker-build-clean() {
     docker build --rm --force-rm -t "$image_name" -f "$dockerfile_path" "$context_dir" || {
         echo "❌ Docker build failed."; return 1; }
 
-    echo "✅ Build complete. Cleaning up dangling + non-whitelisted images..."
+    echo "✅ Build complete. Cleaning dangling images..."
     docker image prune -f
 
     local whitelisted="${WHITELISTED_IMAGES[*]}"
     docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read -r entry; do
         local repo_tag=$(echo "$entry" | awk '{print $1}')
         local img_id=$(echo "$entry" | awk '{print $2}')
-
         if [[ ! " ${whitelisted[@]} " =~ " ${repo_tag} " ]]; then
             echo "🗑️  Removing unlisted image: $repo_tag ($img_id)"
             docker rmi "$img_id" || echo "⚠️  Failed to remove $repo_tag"
@@ -110,9 +109,7 @@ docker-build-clean() {
     done
 }
 
-###############################################
-# ✅ Build Stable Diffusion image (calls generic builder)
-###############################################
+# ✅ Build Stable Diffusion image
 sd-build() {
     TMP_DIR="$SD_TMP_DIR"
     DOCKERFILE_PATH="$SD_DOCKERFILE_PATH"
