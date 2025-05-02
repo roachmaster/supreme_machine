@@ -64,3 +64,38 @@ open-webui-run(){
     -e OLLAMA_BASE_URL=http://127.0.0.1:11434 \
     ghcr.io/open-webui/open-webui:ollama
 }
+
+# Stop (and remove) the Stable Diffusion container
+sd-stop() {
+    docker stop stable-diffusion 2>/dev/null || true
+    docker rm stable-diffusion 2>/dev/null || true
+}
+
+# Tail logs for Stable Diffusion
+sd-logs() {
+    docker logs -f stable-diffusion
+}
+
+# Pull latest image for Automatic1111 (from AbdBarho repo)
+sd-pull() {
+    docker pull ghcr.io/abdelbarho/stable-diffusion-webui:automatic
+}
+
+# Run Stable Diffusion container
+sd-run() {
+    # Stop any running container first
+    sd-stop
+
+    docker run -d \
+        --gpus all \
+        --name stable-diffusion \
+        -p 7860:7860 \
+        -v /home/lrocha/data/stable-diffusion/models:/data/models \
+        -v /home/lrocha/data/stable-diffusion/output:/data/output \
+        ghcr.io/abdelbarho/stable-diffusion-webui:automatic
+}
+
+# Check status
+sd-status() {
+    docker ps -f name=stable-diffusion
+}
