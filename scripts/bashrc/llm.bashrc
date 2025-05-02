@@ -20,64 +20,32 @@ ensure-docker-network() {
     fi
 }
 
-# ✅ Universal Docker run wrapper with validation
+# ✅ Universal Docker run wrapper
 run-container() {
-    local name="$1"
-    local image="$2"
-    local ports="$3"
-    local volumes="$4"
-    local envs="${5:-}"
-    local extras="${6:-}"
+    local name="$1" image="$2" ports="$3" volumes="$4" envs="${5:-}" extras="${6:-}"
 
-    # Validate required args
-    if [ -z "$name" ]; then echo "❌ ERROR: container name not provided"; return 1; fi
-    if [ -z "$image" ]; then echo "❌ ERROR: image name not provided"; return 1; fi
-    if [ -z "$ports" ]; then echo "❌ ERROR: port mapping not provided"; return 1; fi
-    if [ -z "$volumes" ]; then echo "❌ ERROR: volume mapping not provided"; return 1; fi
+    [[ -z "$name" || -z "$image" || -z "$ports" || -z "$volumes" ]] && {
+        echo "❌ Missing required docker run args"; return 1; }
 
-    echo "🚀 Running container:"
-    echo "   Name:   $name"
-    echo "   Image:  $image"
-    echo "   Ports:  $ports"
-    echo "   Volumes:$volumes"
-    [ -n "$envs" ] && echo "   Envs:   $envs"
-    [ -n "$extras" ] && echo "   Extras: $extras"
-
+    echo "🚀 Running container: $name → $image"
     ensure-docker-network
-
     docker stop "$name" 2>/dev/null || true
     docker rm "$name" 2>/dev/null || true
-
-    docker run -d \
-      --name "$name" \
-      --network "$DOCKER_NETWORK" \
-      $DOCKER_GPU_FLAG \
-      $ports \
-      $volumes \
-      $envs \
-      $extras \
-      "$image"
+    docker run -d --name "$name" --network "$DOCKER_NETWORK" \
+      $DOCKER_GPU_FLAG $ports $volumes $envs $extras "$image"
 }
 
 # Auth helpers
 read-ghcr-token() {
-    if [ -f "$GHCR_TOKEN_FILE" ]; then
-        export GHCR_TOKEN=$(< "$GHCR_TOKEN_FILE")
-        echo "✅ GHCR token loaded."
-    else
-        echo "❌ Token file $GHCR_TOKEN_FILE not found."
-    fi
+    [[ -f "$GHCR_TOKEN_FILE" ]] && { export GHCR_TOKEN=$(< "$GHCR_TOKEN_FILE"); echo "✅ GHCR token loaded."; } || echo "❌ Token file not found."
 }
 
 docker-ghcr-login() {
-    if [ -z "$GHCR_TOKEN" ]; then
-        echo "❌ GHCR_TOKEN not set. Run 'read-ghcr-token' first."
-        return 1
-    fi
+    [[ -z "$GHCR_TOKEN" ]] && { echo "❌ GHCR_TOKEN not set."; return 1; }
     echo "$GHCR_TOKEN" | docker login ghcr.io -u $USER --password-stdin
 }
 
-# Logs & status
+# Logs/status
 llm-logs() { docker logs -f "$OLLAMA_CONTAINER"; }
 llm-status() { docker ps -f "name=$OLLAMA_CONTAINER"; }
 open-webui-logs() { docker logs -f "$OPEN_WEBUI_CONTAINER"; }
@@ -85,34 +53,50 @@ open-webui-status() { docker ps -f "name=$OPEN_WEBUI_CONTAINER"; }
 sd-logs() { docker logs -f "$SD_CONTAINER"; }
 sd-status() { docker ps -f "name=$SD_CONTAINER"; }
 
-# Image pull
+# Image pulls
 llm-pull() { docker pull "$OLLAMA_IMAGE"; }
 sd-pull() { read-ghcr-token; docker-ghcr-login || return 1; docker pull "$SD_IMAGE"; }
 
-# ✅ Container runners (clean calls)
-llm-image-run() {
-    run-container "$OLLAMA_CONTAINER" "$OLLAMA_IMAGE" \
-      "-p $OLLAMA_PORT:$OLLAMA_PORT" \
-      "-v $OLLAMA_DATA_DIR:/root/.ollama"
-}
-
+# ✅ Runners
+llm-image-run() { run-container "$OLLAMA_CONTAINER" "$OLLAMA_IMAGE" "-p $OLLAMA_PORT:$OLLAMA_PORT" "-v $OLLAMA_DATA_DIR:/root/.ollama"; }
 open-webui-run() {
-    run-container "$OPEN_WEBUI_CONTAINER" "$OPEN_WEBUI_IMAGE" \
-      "-p 0.0.0.0:$OPEN_WEBUI_PORT:$OPEN_WEBUI_PORT" \
-      "-v $OPEN_WEBUI_DATA_DIR:/app/backend/data" \
-      "-e OLLAMA_BASE_URL=http://$OLLAMA_CONTAINER:$OLLAMA_PORT -e PORT=$OPEN_WEBUI_PORT" \
-      "--add-host=host.docker.internal:host-gateway --restart always"
+    run-container "$OPEN_WEBUI_CONTAINER" "$OPEN_WEBUI_IMAGE" "-p 0.0.0.0:$OPEN_WEBUI_PORT:$OPEN_WEBUI_PORT" "-v $OPEN_WEBUI_DATA_DIR:/app/backend/data" \
+        "-e OLLAMA_BASE_URL=http://$OLLAMA_CONTAINER:$OLLAMA_PORT -e PORT=$OPEN_WEBUI_PORT" \
+        "--add-host=host.docker.internal:host-gateway --restart always"
+}
+sd-run() { read-ghcr-token; docker-ghcr-login || return 1; run-container "$SD_CONTAINER" "$SD_IMAGE" "-p $SD_PORT:$SD_PORT" "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output"; }
+
+###############################################
+# ✅ GENERIC DOCKER BUILD + CLEAN FUNCTION
+###############################################
+docker-build-clean() {
+    local image_name="$1" context_dir="$2" dockerfile_path="$3"
+
+    [[ -z "$image_name" || -z "$context_dir" || -z "$dockerfile_path" ]] && {
+        echo "❌ docker-build-clean missing args"; return 1; }
+
+    echo "⚙️  Building docker image: $image_name"
+    docker build --rm --force-rm -t "$image_name" -f "$dockerfile_path" "$context_dir" || {
+        echo "❌ Docker build failed."; return 1; }
+
+    echo "✅ Build complete. Cleaning up dangling + non-whitelisted images..."
+    docker image prune -f
+
+    local whitelisted="${WHITELISTED_IMAGES[*]}"
+    docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | while read -r entry; do
+        local repo_tag=$(echo "$entry" | awk '{print $1}')
+        local img_id=$(echo "$entry" | awk '{print $2}')
+
+        if [[ ! " ${whitelisted[@]} " =~ " ${repo_tag} " ]]; then
+            echo "🗑️  Removing unlisted image: $repo_tag ($img_id)"
+            docker rmi "$img_id" || echo "⚠️  Failed to remove $repo_tag"
+        fi
+    done
 }
 
-sd-run() {
-    read-ghcr-token
-    docker-ghcr-login || return 1
-    run-container "$SD_CONTAINER" "$SD_IMAGE" \
-      "-p $SD_PORT:$SD_PORT" \
-      "-v $SD_MODELS_DIR:/models -v $SD_OUTPUT_DIR:/output"
-}
-
-# ✅ Build Stable Diffusion image
+###############################################
+# ✅ Build Stable Diffusion image (calls generic builder)
+###############################################
 sd-build() {
     TMP_DIR="$SD_TMP_DIR"
     DOCKERFILE_PATH="$SD_DOCKERFILE_PATH"
@@ -125,31 +109,10 @@ sd-build() {
     mkdir -p "$TMP_DIR" || { echo "❌ Failed to create $TMP_DIR"; return 1; }
 
     echo "📥 Cloning AUTOMATIC1111/stable-diffusion-webui into $TMP_DIR..."
-    if ! git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git "$TMP_DIR"; then
-        echo "❌ Git clone failed."
-        return 1
-    fi
+    git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git "$TMP_DIR" || { echo "❌ Git clone failed."; return 1; }
 
-    if [ ! -f "$DOCKERFILE_PATH" ]; then
-        echo "❌ Dockerfile not found at: $DOCKERFILE_PATH"
-        echo "💡 Expected path inside ROOT_DIR: $ROOT_DIR/docker/sd/Dockerfile"
-        return 1
-    fi
-
-    echo "📄 Copying Dockerfile from $DOCKERFILE_PATH to $TMP_DIR..."
+    [[ ! -f "$DOCKERFILE_PATH" ]] && { echo "❌ Dockerfile missing at $DOCKERFILE_PATH"; return 1; }
     cp "$DOCKERFILE_PATH" "$TMP_DIR/Dockerfile" || { echo "❌ Failed to copy Dockerfile."; return 1; }
 
-    echo "⚙️  Building Docker image: $SD_IMAGE..."
-    cd "$TMP_DIR" || { echo "❌ Failed to cd into $TMP_DIR"; return 1; }
-    if ! docker build -t "$SD_IMAGE" .; then
-        echo "❌ Docker build failed."
-        cd - > /dev/null
-        return 1
-    fi
-
-    echo "✅ Docker build complete: $SD_IMAGE"
-    cd - > /dev/null
-    # Optional cleanup
-    # echo "🧹 Cleaning up $TMP_DIR..."
-    # rm -rf "$TMP_DIR"
+    docker-build-clean "$SD_IMAGE" "$TMP_DIR" "$TMP_DIR/Dockerfile"
 }

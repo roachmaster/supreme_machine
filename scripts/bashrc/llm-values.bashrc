@@ -47,3 +47,13 @@ SD_DOCKERFILE_PATH="$ROOT_DIR/docker/sd/Dockerfile"
 # GitHub Container Registry token
 ###########################
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"
+
+###########################
+# Whitelisted Docker images (safe from cleanup)
+###########################
+WHITELISTED_IMAGES=(
+    "$OLLAMA_IMAGE:latest"
+    "$OPEN_WEBUI_IMAGE"
+    "$SD_IMAGE:latest"
+    "ghcr.io/open-webui/open-webui:ollama"
+)
