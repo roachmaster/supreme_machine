@@ -1,31 +1,35 @@
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV XFORMERS_DISABLE=1  # 🔥 disables xformers globally
 
-# 🟢 Install Python 3.10 and system dependencies
+# Install Python and build tools
 RUN apt-get update && apt-get install -y \
     python3.10 python3.10-venv python3.10-distutils python3-pip \
     git curl ca-certificates \
+    build-essential cmake ninja \
     libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
-    && python -m ensurepip --upgrade \
     && rm -rf /var/lib/apt/lists/*
 
-# 🟢 Set working directory
-WORKDIR /app
+# Install PyTorch
+RUN pip install --upgrade pip
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-# 🟢 Clone Stable Diffusion WebUI
+# Clone Stable Diffusion WebUI
+WORKDIR /app
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-# 🟢 Upgrade pip explicitly for Python 3.10
-RUN python -m pip install --upgrade pip
+# Install xFormers from source
+RUN pip install ninja
+RUN git clone https://github.com/facebookresearch/xformers.git /tmp/xformers \
+    && cd /tmp/xformers \
+    && pip install . \
+    && cd /app \
+    && rm -rf /tmp/xformers
 
-# 🟢 Install Python dependencies
-RUN python -m pip install -r requirements_versions.txt
+# Install WebUI dependencies
+RUN pip install -r requirements_versions.txt
 
-# 🟢 Expose WebUI port
 EXPOSE 7860
 
-# 🟢 Run without --xformers to avoid CUDA build mismatch
-CMD ["python", "launch.py", "--listen"]
+CMD ["python", "launch.py", "--listen", "--xformers"]
