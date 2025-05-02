@@ -18,10 +18,14 @@ OPEN_WEBUI_DATA_DIR="/home/lrocha/data/open-webui"
 
 # Stable Diffusion
 SD_CONTAINER="stable-diffusion"
-SD_IMAGE="hlky/stable-diffusion-webui:latest"  # Change to another public image if preferred
+SD_IMAGE="my-stable-diffusion-webui"   # 📝 Local built image name
 SD_PORT="7860"
 SD_MODELS_DIR="/home/lrocha/data/stable-diffusion/models"
 SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
+
+# Paths for build
+SD_TMP_DIR="/tmp/stable-diffusion-webui"
+SD_DOCKERFILE_PATH="/home/lrocha/repos/supreme_machine/docker/sd/Dockerfile"
 
 # GitHub Container Registry token file
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"

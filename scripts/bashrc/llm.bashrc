@@ -1,7 +1,6 @@
 # llm.bashrc
 # Functions for daily LLM and Stable Diffusion Docker tasks (no docker-compose)
 
-# 🆕 AUTOMATED BUILD FUNCTION
 # Load configuration values
 if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
     source "${BASH_SOURCE%/*}/llm-values.bashrc"
@@ -9,7 +8,6 @@ if [ -f "${BASH_SOURCE%/*}/llm-values.bashrc" ]; then
 else
     echo "⚠️  llm-values.bashrc not found in ${BASH_SOURCE%/*}. Using defaults."
 fi
-
 
 read-ghcr-token() { if [ -f "$GHCR_TOKEN_FILE" ]; then export GHCR_TOKEN=$(< "$GHCR_TOKEN_FILE"); echo "✅ GHCR token loaded."; else echo "❌ Token file $GHCR_TOKEN_FILE not found."; fi; }
 docker-ghcr-login() { if [ -z "$GHCR_TOKEN" ]; then echo "❌ GHCR_TOKEN not set. Run 'read-ghcr-token' first."; return 1; fi; echo "$GHCR_TOKEN" | docker login ghcr.io -u $USER --password-stdin; }
@@ -43,36 +41,42 @@ sd-run() {
 }
 sd-status() { docker ps -f "name=$SD_CONTAINER"; }
 
-
-# All previous functions here (no changes)...
-
-# 🆕 AUTOMATED BUILD FUNCTION (uses static Dockerfile)
+# 🆕 FOOLPROOF AUTOMATED BUILD FUNCTION
 sd-build() {
     TMP_DIR="/tmp/stable-diffusion-webui"
-    DOCKERFILE_PATH="${BASH_SOURCE%/*}/../docker/sd/Dockerfile"
+    SCRIPT_DIR="$(realpath "${BASH_SOURCE%/*}")"
+    DOCKERFILE_PATH="$SCRIPT_DIR/../docker/sd/Dockerfile"
 
-    echo "🔄 Setting up build directory at $TMP_DIR..."
-    rm -rf "$TMP_DIR"
-    mkdir -p "$TMP_DIR"
-    cd "$TMP_DIR" || { echo "❌ Failed to cd into $TMP_DIR"; return 1; }
+    echo "🔄 Ensuring temporary build directory $TMP_DIR..."
+    rm -rf "$TMP_DIR" || { echo "❌ Failed to clean $TMP_DIR"; return 1; }
+    mkdir -p "$TMP_DIR" || { echo "❌ Failed to create $TMP_DIR"; return 1; }
 
-    echo "📥 Cloning AUTOMATIC1111/stable-diffusion-webui..."
-    git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
-
-    if [ ! -f "$DOCKERFILE_PATH" ]; then
-        echo "❌ Dockerfile not found at $DOCKERFILE_PATH"
+    echo "📥 Cloning AUTOMATIC1111/stable-diffusion-webui into $TMP_DIR..."
+    if ! git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git "$TMP_DIR"; then
+        echo "❌ Git clone failed."
         return 1
     fi
 
-    echo "📄 Copying Dockerfile from $DOCKERFILE_PATH..."
-    cp "$DOCKERFILE_PATH" Dockerfile
+    if [ ! -f "$DOCKERFILE_PATH" ]; then
+        echo "❌ Dockerfile not found at expected path: $DOCKERFILE_PATH"
+        echo "Please ensure docker/sd/Dockerfile exists."
+        return 1
+    fi
+
+    echo "📄 Copying Dockerfile from $DOCKERFILE_PATH to $TMP_DIR..."
+    cp "$DOCKERFILE_PATH" "$TMP_DIR/Dockerfile" || { echo "❌ Failed to copy Dockerfile."; return 1; }
 
     echo "⚙️  Building Docker image: $SD_IMAGE..."
-    docker build -t "$SD_IMAGE" .
+    cd "$TMP_DIR" || { echo "❌ Failed to cd into $TMP_DIR"; return 1; }
+    if ! docker build -t "$SD_IMAGE" .; then
+        echo "❌ Docker build failed."
+        cd - > /dev/null
+        return 1
+    fi
 
-    echo "✅ Build complete. Image: $SD_IMAGE"
+    echo "✅ Docker build complete: $SD_IMAGE"
     cd - > /dev/null
-
-    # Optionally clean tmp dir:
+    # Optional clean-up toggle (uncomment to auto-clean):
+    # echo "🧹 Cleaning up $TMP_DIR..."
     # rm -rf "$TMP_DIR"
 }
