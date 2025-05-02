@@ -106,6 +106,11 @@ remove-all() {
     docker rm "$SD_CONTAINER" "$OPEN_WEBUI_CONTAINER" "$OLLAMA_CONTAINER" 2>/dev/null || true
 }
 
+remove-all-containers() {
+    echo "🗑️  Removing ALL containers (running and stopped)..."
+    docker rm -f $(docker ps -aq) 2>/dev/null || echo "✅ No containers to remove."
+}
+
 # ✅ Exec into a container
 exec-into() {
     local name="$1"
@@ -164,16 +169,20 @@ sd-build() {
     docker-build-clean "$SD_IMAGE" "$TMP_DIR" "$TMP_DIR/Dockerfile"
 }
 
-# ✅ Build CUDA base image
+# ✅ Build CUDA base image with dynamic version args
 cuda-base-build() {
     local base_dockerfile="$ROOT_DIR/docker/cuda/Dockerfile"
     [[ ! -f "$base_dockerfile" ]] && { echo "❌ CUDA Dockerfile missing at $base_dockerfile"; return 1; }
 
     echo "⚙️  Building CUDA base image: $CUDA_BASE_IMAGE"
-    docker-build-clean "$CUDA_BASE_IMAGE" "$ROOT_DIR/docker/cuda" "$base_dockerfile"
-}
+    docker build --rm --force-rm \
+        --build-arg TORCH_VERSION="$TORCH_VERSION" \
+        --build-arg CUDA_VERSION="$CUDA_VERSION" \
+        --build-arg TORCHVISION_VERSION="$TORCHVISION_VERSION" \
+        --build-arg TORCHAUDIO_VERSION="$TORCHAUDIO_VERSION" \
+        --build-arg XFORMERS_CUDA_ARCH="$XFORMERS_CUDA_ARCH" \
+        -t "$CUDA_BASE_IMAGE" "$ROOT_DIR/docker/cuda" || {
+            echo "❌ CUDA base build failed."; return 1; }
 
-remove-all-containers() {
-    echo "🗑️  Removing ALL containers (running and stopped)..."
-    docker rm -f $(docker ps -aq) 2>/dev/null || echo "✅ No containers to remove."
+    clean-dangling-images
 }

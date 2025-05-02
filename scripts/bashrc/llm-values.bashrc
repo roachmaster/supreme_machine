@@ -10,7 +10,7 @@ ROOT_DIR="/home/lrocha/repos/supreme_machine"
 # General Docker options
 ###########################
 DOCKER_GPU_FLAG="--gpus all"
-DOCKER_NETWORK="llm-network"  # shared network for all containers
+DOCKER_NETWORK="llm-network"
 
 ###########################
 # Ollama container config
@@ -32,7 +32,7 @@ OPEN_WEBUI_DATA_DIR="/home/lrocha/data/open-webui"
 # Stable Diffusion container config
 ###########################
 SD_CONTAINER="stable-diffusion"
-SD_IMAGE="my-stable-diffusion-webui"  # 📝 downstream app image
+SD_IMAGE="my-stable-diffusion-webui"
 SD_PORT="7860"
 SD_MODELS_DIR="/home/lrocha/data/stable-diffusion/models"
 SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
@@ -41,6 +41,13 @@ SD_OUTPUT_DIR="/home/lrocha/data/stable-diffusion/output"
 # CUDA + Torch + xFormers base image config
 ###########################
 CUDA_BASE_IMAGE="my-cuda-base:torch2.7-cu126-xformers"
+
+# ✅ Build versions
+TORCH_VERSION="2.7.0"
+CUDA_VERSION="cu126"
+TORCHVISION_VERSION="0.21.0"
+TORCHAUDIO_VERSION="2.7.0"
+XFORMERS_CUDA_ARCH="8.9"
 
 ###########################
 # Stable Diffusion build paths
@@ -54,7 +61,7 @@ SD_DOCKERFILE_PATH="$ROOT_DIR/docker/sd/Dockerfile"
 GHCR_TOKEN_FILE="$HOME/.ghcr_token"
 
 ###########################
-# ✅ Whitelisted Docker images (prevent auto-clean deletion)
+# ✅ Whitelisted Docker images
 ###########################
 WHITELISTED_IMAGES=(
     "${OLLAMA_IMAGE}:latest"
