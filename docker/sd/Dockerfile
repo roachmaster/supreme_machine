@@ -1,37 +1,26 @@
-# Use an Ubuntu-based CUDA image with cuDNN
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu20.04
 
-# Suppress interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
-ENV OLLAMA_HOST=0.0.0.0
 
-# Install required system packages (fix OpenCV libGL.so.1 error)
-RUN apt-get update && \
-    apt-get install -y \
-        python3 python3-pip \
-        git curl ca-certificates openssh-client \
-        libgl1-mesa-glx libgl1-mesa-dev libglib2.0-0 \
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip \
+    git curl ca-certificates \
+    libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch + Transformers
-RUN pip3 install --no-cache-dir torch torchvision torchaudio transformers
-
-# Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
-# Generate SSH key for Ollama
-RUN mkdir -p /root/.ollama && \
-    ssh-keygen -t ed25519 -N "" -f /root/.ollama/id_ed25519 && \
-    chmod 700 /root/.ollama && chmod 600 /root/.ollama/id_ed25519
-
-# Set working directory
+# Clone Stable Diffusion WebUI repo inside container
 WORKDIR /app
+RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-# Copy local application code (optional; remove if not needed)
-COPY . /app
+# Install Python dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-# Expose Ollama default port
-EXPOSE 11434
+# Optional: install xformers (comment if not using)
+RUN pip install xformers==0.0.20 triton==2.0.0
 
-# Start Ollama server
-CMD ["ollama", "serve"]
+# Expose Web UI port
+EXPOSE 7860
+
+# Run Stable Diffusion WebUI
+CMD ["python3", "launch.py", "--listen", "--xformers"]
