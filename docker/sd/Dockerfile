@@ -12,26 +12,27 @@ RUN apt-get update && apt-get install -y \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
     && rm -rf /var/lib/apt/lists/*
 
-# ✅ Install PyTorch matching CUDA version
+# ✅ Install PyTorch for CUDA 12.1 (or match your CUDA version)
 RUN pip install --upgrade pip \
     && pip install torch==2.1.2+cu121 torchvision==0.16.2+cu121 torchaudio==2.1.2 --extra-index-url https://download.pytorch.org/whl/cu121
 
-# ✅ Clone and build xformers from source
+# ✅ Clone and build xformers
 WORKDIR /tmp
 RUN git clone https://github.com/facebookresearch/xformers.git \
     && cd xformers \
+    && git submodule update --init --recursive \
     && pip install -r requirements.txt \
     && TORCH_CUDA_ARCH_LIST="8.9" FORCE_CUDA=1 python setup.py bdist_wheel \
     && pip install dist/*.whl
 
-# ✅ Move to app
+# ✅ Move to app directory
 WORKDIR /app
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-# ✅ Install SD dependencies
+# ✅ Install WebUI deps
 RUN pip install -r requirements_versions.txt
 
-# ✅ Optional: print xformers info for debug
+# ✅ Debug xformers info
 RUN python -m xformers.info
 
 EXPOSE 7860
