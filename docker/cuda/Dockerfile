@@ -4,17 +4,16 @@ FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 # ✅ Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# ✅ Import build-time versions from llm-values.bashrc
-ARG TORCH_VERSION
-ARG TORCHAUDIO_VERSION
-ARG TORCHVISION_VERSION
-ARG CUDA_VERSION
-ARG XFORMERS_CUDA_ARCH
+# ✅ Versions (injected via --build-arg or fallback defaults)
+ARG TORCH_VERSION=2.6.0
+ARG TORCHVISION_VERSION=0.21.0
+ARG TORCHAUDIO_VERSION=2.6.0
+ARG CUDA_VERSION=cu126
+ARG XFORMERS_CUDA_ARCH="8.9"
 
-# ✅ Export as ENV for build + runtime
 ENV TORCH_VERSION=${TORCH_VERSION}
-ENV TORCHAUDIO_VERSION=${TORCHAUDIO_VERSION}
 ENV TORCHVISION_VERSION=${TORCHVISION_VERSION}
+ENV TORCHAUDIO_VERSION=${TORCHAUDIO_VERSION}
 ENV CUDA_VERSION=${CUDA_VERSION}
 ENV XFORMERS_CUDA_ARCH=${XFORMERS_CUDA_ARCH}
 
@@ -37,14 +36,15 @@ RUN pip install torch==${TORCH_VERSION}+${CUDA_VERSION} --extra-index-url https:
 WORKDIR /tmp
 RUN git clone --branch v${TORCHVISION_VERSION} https://github.com/pytorch/vision.git \
     && cd vision \
-    && pip install -r requirements.txt \
+    && if [ -f requirements.txt ]; then reqfile=requirements.txt; else reqfile=requirements/requirements.txt; fi \
+    && pip install -r $reqfile \
     && python setup.py bdist_wheel \
     && pip install dist/*.whl
 
 # ✅ Install torchaudio binary
 RUN pip install torchaudio==${TORCHAUDIO_VERSION}+${CUDA_VERSION} --extra-index-url https://download.pytorch.org/whl/${CUDA_VERSION}
 
-# ✅ Build xFormers from source (with submodules!)
+# ✅ Build xFormers from source (with submodules)
 RUN git clone --recursive https://github.com/facebookresearch/xformers.git \
     && cd xformers \
     && git submodule update --init --recursive \
@@ -53,7 +53,7 @@ RUN git clone --recursive https://github.com/facebookresearch/xformers.git \
     && pip install dist/*.whl
 
 # ✅ Verify xFormers install
-RUN python -m xformers.info || echo "⚠️ xFormers info failed (ok outside runtime)"
+RUN python -m xformers.info || echo "⚠️ xFormers info failed (expected outside runtime)"
 
 # ✅ CUDA runtime ENV
 ENV CUDA_HOME=/usr/local/cuda
@@ -64,14 +64,14 @@ WORKDIR /app
 # ✅ Clone Stable Diffusion WebUI
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
-# ✅ Upgrade pip again
+# ✅ Upgrade pip again (just in case)
 RUN pip install --upgrade pip
 
-# ✅ Install WebUI requirements
+# ✅ Install Stable Diffusion WebUI requirements
 RUN pip install -r requirements_versions.txt
 
 # ✅ Expose WebUI port
 EXPOSE 7860
 
-# ✅ Launch WebUI
+# ✅ Launch Stable Diffusion WebUI (with xformers!)
 CMD ["python", "launch.py", "--listen", "--xformers"]
