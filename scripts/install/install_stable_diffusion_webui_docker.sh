@@ -1,4 +1,15 @@
+# Filename: install_stable_diffusion_webui_docker.sh
+
 #!/bin/bash
+
+echo "🔒 Checking UFW status..."
+if sudo ufw status | grep -q inactive; then
+    echo "⚠️  UFW is inactive. Skipping firewall configuration."
+else
+    echo "🛡️  Allowing port 7860 through UFW..."
+    sudo ufw allow 7860/tcp
+    echo "✅ Port 7860 allowed."
+fi
 
 echo "🔄 Cloning stable-diffusion-webui-docker repository..."
 git clone https://github.com/AbdBarho/stable-diffusion-webui-docker.git
